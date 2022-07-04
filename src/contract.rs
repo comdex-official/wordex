@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, DepsMut, Deps, Env, MessageInfo, Response, Addr, StdResult, Binary};
+use cosmwasm_std::{to_binary, DepsMut, Env, MessageInfo, Response, StdResult, Binary};
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
@@ -43,11 +43,11 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::CreatePlayer {name, addr} => create_player(deps, info, name, addr),
-        ExecuteMsg::StartGame {addr} => start_game(deps, info, addr),
-        ExecuteMsg::UpdateGame {addr, game, guess, correct_guess, wrong_guess} => update_game(deps, info, addr, game, guess, correct_guess, wrong_guess),//update guesses, sets
-        ExecuteMsg::RewardPlayer{addr} => reward_player(deps, info, addr),
-        ExecuteMsg::EndGame{addr} => end_game(deps, info, addr),
+        ExecuteMsg::CreatePlayer {name} => create_player(deps, info, name),
+        ExecuteMsg::StartGame {} => start_game(deps, info),
+        ExecuteMsg::UpdateGame { game, guess, correct_guess, wrong_guess} => update_game(deps, info, game, guess, correct_guess, wrong_guess),//update guesses, sets
+        ExecuteMsg::RewardPlayer{} => reward_player(deps, info),
+        ExecuteMsg::EndGame{} => end_game(deps, info),
     }
 }
 
@@ -72,14 +72,14 @@ pub fn query(deps: DepsMut, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     }
 }
 
-pub fn create_player(deps: DepsMut, info: MessageInfo, name: String, addr: Addr) -> Result<Response, ContractError> {
+pub fn create_player(deps: DepsMut, info: MessageInfo, name: String) -> Result<Response, ContractError> {
     //read the state of the contract to get current players and curr id
     let mut state = config_read(deps.storage).load()?;
 
     //create new player struct
     let player = Player{
         name,
-        address: addr.clone(),
+        address: info.sender.clone(),
         id: state.curr_id+1,
         balance: None,
         prev_correct_guesses: 0,
@@ -91,7 +91,7 @@ pub fn create_player(deps: DepsMut, info: MessageInfo, name: String, addr: Addr)
     };
 
     //read playerinfo
-    let key = addr.as_str().as_bytes();
+    let key = info.sender.as_str().as_bytes();
 
     //saving player manager data
     player_bank(deps.storage).save(key, &player)?;
@@ -99,9 +99,9 @@ pub fn create_player(deps: DepsMut, info: MessageInfo, name: String, addr: Addr)
     //changing state changes
     state.curr_id += 1;
     state.players = match state.players{
-        None => Some(vec![addr]),
+        None => Some(vec![info.sender.clone()]),
         Some(mut v) => {
-            v.append(&mut(vec![addr])); Some(v)
+            v.append(&mut(vec![info.sender.clone()])); Some(v)
         }
     };
 
@@ -114,9 +114,9 @@ pub fn create_player(deps: DepsMut, info: MessageInfo, name: String, addr: Addr)
 }
 
 
-fn start_game(deps: DepsMut, info: MessageInfo, addr: Addr) -> Result<Response, ContractError>{
+fn start_game(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError>{
     //read playerinfo
-    let key = addr.as_str().as_bytes();
+    let key = info.sender.as_str().as_bytes();
 
     //read all the players present
     let mut player = player_bank_read(deps.storage).load(key)?;
@@ -142,9 +142,9 @@ fn start_game(deps: DepsMut, info: MessageInfo, addr: Addr) -> Result<Response, 
 
 }
 
-pub fn update_game(deps: DepsMut, info: MessageInfo, addr: Addr, game: bool, guess: bool, correct_guess: bool, wrong_guess: bool) -> Result<Response, ContractError>{
+pub fn update_game(deps: DepsMut, info: MessageInfo, game: bool, guess: bool, correct_guess: bool, wrong_guess: bool) -> Result<Response, ContractError>{
     //read playerinfo
-    let key = addr.as_str().as_bytes();
+    let key = info.sender.as_str().as_bytes();
 
     //read all the players present
     let mut player = player_bank_read(deps.storage).load(key)?;
@@ -171,7 +171,7 @@ pub fn update_game(deps: DepsMut, info: MessageInfo, addr: Addr, game: bool, gue
 
 
 
-pub fn end_game(deps: DepsMut, info: MessageInfo, addr: Addr)
+pub fn end_game(deps: DepsMut, info: MessageInfo)
 -> Result<Response, ContractError>{
     //read playerinfo
     let key = info.sender.as_str().as_bytes();
@@ -190,9 +190,9 @@ pub fn end_game(deps: DepsMut, info: MessageInfo, addr: Addr)
     Ok(Response::default())
 }
 
-pub fn reward_player(deps: DepsMut, info: MessageInfo, addr: Addr) -> Result<Response, ContractError>{
+pub fn reward_player(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError>{
      //read playerinfo
-    let key = addr.as_str().as_bytes();
+    let key = info.sender.as_str().as_bytes();
 
     //read all the players present
     let mut player = player_bank_read(deps.storage).load(key)?;
@@ -219,34 +219,51 @@ pub fn reward_player(deps: DepsMut, info: MessageInfo, addr: Addr) -> Result<Res
 }
 
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-//     use cosmwasm_std::{coins, from_binary};
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::{ coins, Addr};
+
+    const TEST_CREATOR: &str = "creator";
+    pub const TOKEN: &str = "wdx";
+
+    fn init_msg() -> InstantiateMsg {
+        InstantiateMsg {
+            denom: String::from(TOKEN),
+            max_cap: 1000
+        }
+    }
+
+    #[test]
+    fn proper_initialization() {
+        let mut deps = mock_dependencies();
+
+        let msg = init_msg();
+        let info = mock_info(TEST_CREATOR, &coins(2, TOKEN));
+        let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+        assert_eq!(0, res.messages.len());
+
+        let state = config_read(&mut deps.storage).load().unwrap();
+        assert_eq!(
+            state,
+            State {
+                creator: Addr::unchecked(TEST_CREATOR),
+                denom: String::from("wdx"),
+                minted_tokens: 0,
+                games_played: 0,
+                max_cap: 1000,
+                curr_id: 0,
+                players: None,
+            }
+        );
+    }
 
 //     #[test]
-//     fn proper_initialization() {
-//         let mut deps = mock_dependencies(&[]);
+//     fn test_create_player() {
+//         let mut deps = mock_dependencies();
 
-//         let msg = InstantiateMsg { count: 17 };
-//         let info = mock_info("creator", &coins(1000, "earth"));
-
-//         // we can just call .unwrap() to assert this was a success
-//         let res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
-//         assert_eq!(0, res.messages.len());
-
-//         // it worked, let's query the state
-//         let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-//         let value: CountResponse = from_binary(&res).unwrap();
-//         assert_eq!(17, value.count);
-//     }
-
-//     #[test]
-//     fn increment() {
-//         let mut deps = mock_dependencies(&coins(2, "token"));
-
-//         let msg = InstantiateMsg { count: 17 };
+//         let msg = ExecuteMsg { count: 17 };
 //         let info = mock_info("creator", &coins(2, "token"));
 //         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
@@ -261,31 +278,31 @@ pub fn reward_player(deps: DepsMut, info: MessageInfo, addr: Addr) -> Result<Res
 //         assert_eq!(18, value.count);
 //     }
 
-//     #[test]
-//     fn reset() {
-//         let mut deps = mock_dependencies(&coins(2, "token"));
+// //     #[test]
+// //     fn reset() {
+// //         let mut deps = mock_dependencies(&coins(2, "token"));
 
-//         let msg = InstantiateMsg { count: 17 };
-//         let info = mock_info("creator", &coins(2, "token"));
-//         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
+// //         let msg = InstantiateMsg { count: 17 };
+// //         let info = mock_info("creator", &coins(2, "token"));
+// //         let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
-//         // beneficiary can release it
-//         let unauth_info = mock_info("anyone", &coins(2, "token"));
-//         let msg = ExecuteMsg::Reset { count: 5 };
-//         let res = execute(deps.as_mut(), mock_env(), unauth_info, msg);
-//         match res {
-//             Err(ContractError::Unauthorized {}) => {}
-//             _ => panic!("Must return unauthorized error"),
-//         }
+// //         // beneficiary can release it
+// //         let unauth_info = mock_info("anyone", &coins(2, "token"));
+// //         let msg = ExecuteMsg::Reset { count: 5 };
+// //         let res = execute(deps.as_mut(), mock_env(), unauth_info, msg);
+// //         match res {
+// //             Err(ContractError::Unauthorized {}) => {}
+// //             _ => panic!("Must return unauthorized error"),
+// //         }
 
-//         // only the original creator can reset the counter
-//         let auth_info = mock_info("creator", &coins(2, "token"));
-//         let msg = ExecuteMsg::Reset { count: 5 };
-//         let _res = execute(deps.as_mut(), mock_env(), auth_info, msg).unwrap();
+// //         // only the original creator can reset the counter
+// //         let auth_info = mock_info("creator", &coins(2, "token"));
+// //         let msg = ExecuteMsg::Reset { count: 5 };
+// //         let _res = execute(deps.as_mut(), mock_env(), auth_info, msg).unwrap();
 
-//         // should now be 5
-//         let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
-//         let value: CountResponse = from_binary(&res).unwrap();
-//         assert_eq!(5, value.count);
-//     }
-// }
+// //         // should now be 5
+// //         let res = query(deps.as_ref(), mock_env(), QueryMsg::GetCount {}).unwrap();
+// //         let value: CountResponse = from_binary(&res).unwrap();
+// //         assert_eq!(5, value.count);
+// //     }
+}

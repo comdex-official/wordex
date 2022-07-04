@@ -34,12 +34,12 @@ pub struct InstantiateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    CreatePlayer{name: String, addr: Addr},
-    StartGame{addr: Addr},
-    EndGame{addr: Addr},
-    UpdateGame{addr: Addr, game: bool, guess: bool, correct_guess: bool,
+    CreatePlayer{name: String},
+    StartGame{},
+    EndGame{},
+    UpdateGame{game: bool, guess: bool, correct_guess: bool,
     wrong_guess:bool},
-    RewardPlayer{addr: Addr},
+    RewardPlayer{},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

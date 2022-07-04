@@ -1,8 +1,6 @@
-use chrono::DateTime;
-use chrono::offset::Utc;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{attr, DepsMut, Deps, Env, MessageInfo, Response, Addr, StdResult, Binary};
+use cosmwasm_std::{to_binary, DepsMut, Deps, Env, MessageInfo, Response, Addr, StdResult, Binary};
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
@@ -27,6 +25,7 @@ pub fn instantiate(
         games_played: 0,
         max_cap: msg.max_cap,
         curr_id: 0,
+        players: None,
     };
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     config(deps.storage).save(&state)?;
@@ -45,7 +44,6 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::CreatePlayer {name, addr} => create_player(deps, info, name, addr),
-        ExecuteMsg::LoadPlayer { addr } => load_player(deps, info, addr),
         ExecuteMsg::StartGame {addr} => start_game(deps, info, addr),
         ExecuteMsg::UpdateGame {addr, game, guess, correct_guess, wrong_guess} => update_game(deps, info, addr, game, guess, correct_guess, wrong_guess),//update guesses, sets
         ExecuteMsg::RewardPlayer{addr} => reward_player(deps, info, addr),
@@ -56,11 +54,21 @@ pub fn execute(
 //if game is not ongoing and time is not over, new game can't be started
 //if time is over, new game can surely be started.
 
-
 #[entry_point]
-pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: DepsMut, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::QueryPlayer {addr: Addr} => ,
+        QueryMsg::QueryPlayer {addr} =>
+        { to_binary(&player_bank_read(deps.storage).may_load(addr.as_str().as_bytes())?) },
+        QueryMsg::QueryPlayerExists { addr } =>
+        {
+            //read the state
+            let state = config_read(deps.storage).load()?;
+            let res = match state.players{
+                None => false,
+                Some(x) => x.contains(&addr)
+            };
+            to_binary(&res)
+        }
     }
 }
 
@@ -83,25 +91,19 @@ pub fn create_player(deps: DepsMut, info: MessageInfo, name: String, addr: Addr)
     };
 
     //read playerinfo
-    let key = info.sender.as_str().as_bytes();
-
-    //read all the players present
-    let mut player_manager = player_bank_read(deps.storage).may_load(key)?.unwrap_or_default();
-
-    //these are the current players
-    let cur_players = player_manager.players;
-
-    //matching players to none or some value and appending new players
-    player_manager.players =  match cur_players{
-        None => Some(vec![(addr,player)]),
-        Some(x) => Some([x,vec![(addr,player)]].concat())
-    };
+    let key = addr.as_str().as_bytes();
 
     //saving player manager data
-    player_bank(deps.storage).save(key, &player_manager)?;
+    player_bank(deps.storage).save(key, &player)?;
 
     //changing state changes
     state.curr_id += 1;
+    state.players = match state.players{
+        None => Some(vec![addr]),
+        Some(mut v) => {
+            v.append(&mut(vec![addr])); Some(v)
+        }
+    };
 
     //saving state data
     config(deps.storage).save(&state)?;
@@ -112,77 +114,20 @@ pub fn create_player(deps: DepsMut, info: MessageInfo, name: String, addr: Addr)
 }
 
 
-//load player details and send in response
-pub fn load_player(deps: DepsMut, info: MessageInfo, addr: Addr)
--> Result<Response, ContractError>{
-     //this stores that players details
-    let player_detail = query_player_detail(deps, info, addr).unwrap();
-
-    //get the coin balances info in a vec of pairs
-    let mut coin_vec = Vec::new();
-
-    let coin_info = match player_detail.balance.clone(){
-        None => coin_vec,
-        Some(x) => {
-            for c in x.iter(){
-                coin_vec.push((c.denom.clone(), c.amount.to_string()));
-            }
-            coin_vec
-        }
-    };
-
-    //time to renew stored in date time format
-    let time_stored: DateTime<Utc> = player_detail.time_to_renew.unwrap().into();
-
-    let mut attributes = vec![
-        attr("action", "load_player"),
-        attr("name", &player_detail.name),
-        attr("id", &player_detail.id.to_string()),
-        attr("correct_guesses", &player_detail.prev_correct_guesses.to_string()),
-        attr("wrong_guesses", &player_detail.prev_wrong_guesses.to_string()),
-        attr("games_set", &player_detail.rem_games_set.to_string()),
-        attr("guesses_rem", &player_detail.guesses_rem.to_string()),
-        attr("renew_time", time_stored.to_rfc2822()),
-    ];
-
-    //concatenate coin details to attributes
-    for c in coin_info.iter(){
-        attributes.push(attr(&c.0,c.1));
-    }
-
-    let res = Response::new().add_attributes(attributes);
-
-    Ok(res)
-
-}
-
-
 fn start_game(deps: DepsMut, info: MessageInfo, addr: Addr) -> Result<Response, ContractError>{
     //read playerinfo
-    let key = info.sender.as_str().as_bytes();
+    let key = addr.as_str().as_bytes();
 
     //read all the players present
-    let player_manager = player_bank_read(deps.storage).may_load(key)?.unwrap();
-
-    //this stores that players details
-    let mut player_detail = None;
-    let players = player_manager.players.as_ref().unwrap();
-
-    //go through player base and find the relevant player's details
-    for player in players.iter(){
-        if player.0 == addr{
-            player_detail = Some(player.1.clone());
-            break;
-        }
-    }
+    let mut player = player_bank_read(deps.storage).load(key)?;
 
     //details to be set at start of game
-    player_detail.clone().unwrap().game_ongoing = true;
-    player_detail.clone().unwrap().rem_games_set = 5;
-    player_detail.unwrap().guesses_rem = 18;
+    player.game_ongoing = true;
+    player.rem_games_set = 5;
+    player.guesses_rem = 18;
 
     //save the details
-    player_bank(deps.storage).save(key, &player_manager)?;
+    player_bank(deps.storage).save(key, &player)?;
 
     //read state details
     let mut state = config_read(deps.storage).load()?;
@@ -199,38 +144,27 @@ fn start_game(deps: DepsMut, info: MessageInfo, addr: Addr) -> Result<Response, 
 
 pub fn update_game(deps: DepsMut, info: MessageInfo, addr: Addr, game: bool, guess: bool, correct_guess: bool, wrong_guess: bool) -> Result<Response, ContractError>{
     //read playerinfo
-    let key = info.sender.as_str().as_bytes();
+    let key = addr.as_str().as_bytes();
 
     //read all the players present
-    let player_manager = player_bank_read(deps.storage).may_load(key)?.unwrap();
-
-    //this stores that players details
-    let mut player_detail = None;
-    let players = player_manager.players.as_ref().unwrap();
-
-    //go through player base and find the relevant player's details
-    for player in players.iter(){
-        if player.0 == addr{
-            player_detail = Some(player.1.clone());
-        }
-    }
+    let mut player = player_bank_read(deps.storage).load(key)?;
 
     //update relevant details
     if guess{
-        player_detail.clone().unwrap().guesses_rem -= 1;
+        player.guesses_rem -= 1;
     }
     else if game {
-        player_detail.clone().unwrap().rem_games_set -= 1;
+        player.rem_games_set -= 1;
     }
     else if correct_guess{
-        player_detail.clone().unwrap().prev_correct_guesses += 1;
+        player.prev_correct_guesses += 1;
     }
     else if wrong_guess{
-        player_detail.clone().unwrap().prev_wrong_guesses += 1;
+        player.prev_wrong_guesses += 1;
     }
 
     //save the details
-    player_bank(deps.storage).save(key, &player_manager)?;
+    player_bank(deps.storage).save(key, &player)?;
 
     Ok(Response::default())
 }
@@ -243,60 +177,38 @@ pub fn end_game(deps: DepsMut, info: MessageInfo, addr: Addr)
     let key = info.sender.as_str().as_bytes();
 
     //read all the players present
-    let player_manager = player_bank_read(deps.storage).may_load(key)?.unwrap();
-
-    //this stores that players details
-    let mut player_detail = None;
-    let players = player_manager.players.as_ref().unwrap();
-
-    //go through player base and find the relevant player's details
-    for player in players.iter(){
-        if player.0 == addr{
-            player_detail = Some(player.1.clone());
-        }
-    }
+    let mut player = player_bank_read(deps.storage).load(key)?;
 
     //make game not ongoing, rem games = 0 and rem guesses = 0
-    player_detail.clone().unwrap().game_ongoing = false;
-    player_detail.clone().unwrap().rem_games_set = 0;
-    player_detail.unwrap().guesses_rem = 0;
+    player.game_ongoing = false;
+    player.rem_games_set = 0;
+    player.guesses_rem = 0;
 
     //save the details
-    player_bank(deps.storage).save(key, &player_manager)?;
+    player_bank(deps.storage).save(key, &player)?;
 
     Ok(Response::default())
 }
 
 pub fn reward_player(deps: DepsMut, info: MessageInfo, addr: Addr) -> Result<Response, ContractError>{
      //read playerinfo
-    let key = info.sender.as_str().as_bytes();
+    let key = addr.as_str().as_bytes();
 
     //read all the players present
-    let player_manager = player_bank_read(deps.storage).may_load(key)?.unwrap();
-
-    //this stores that players details
-    let mut player_detail = None;
-    let players = player_manager.players.unwrap();
-
-    //go through player base and find the relevant player's details
-    for player in players.iter(){
-        if player.0 == addr{
-            player_detail = Some(player.1.clone());
-        }
-    }
+    let mut player = player_bank_read(deps.storage).load(key)?;
 
     //calculate how many moves the player made to reach to the winning postion
-    let used_guesses = 18 - player_detail.clone().unwrap().guesses_rem;
+    let used_guesses = 18 - player.guesses_rem;
 
     //calculate reward to be given
     let reward = 25 as f64/(used_guesses-4) as f64;
 
-    player_detail.clone().unwrap().balance =  match player_detail.clone().unwrap().balance{
+    player.balance =  match player.balance{
         None => Some(vec![OurCoin{denom:String::from("wdx"),amount:reward}]),
-        Some(x) => {
-            for &c in x.iter(){
-                if c.denom == String::from("wdx"){
-                    c.amount += reward;
+        Some(mut x) => {
+            for c in x.iter_mut(){
+                if (*c).denom == String::from("wdx"){
+                    (*c).amount += reward;
                 }
             }
             Some(x)
@@ -304,30 +216,6 @@ pub fn reward_player(deps: DepsMut, info: MessageInfo, addr: Addr) -> Result<Res
     };
 
     Ok(Response::default())
-}
-
-
-// function to load player details
-pub fn query_player_detail(deps:DepsMut, info: MessageInfo ,addr: Addr) -> Result<Player, ContractError>{
-    //read playerinfo
-    let key = info.sender.as_str().as_bytes();
-
-    //read all the players present
-    let player_manager = player_bank_read(deps.storage).may_load(key)?.unwrap();
-
-    //this stores that players details
-    let mut player_detail = None;
-    let players = player_manager.players.unwrap();
-
-    //go through player base and find the relevant player's details
-    for player in players.iter(){
-        if player.0 == addr{
-            player_detail = Some(player.1.clone());
-            break;
-        }
-    }
-
-    Ok(player_detail.unwrap())
 }
 
 

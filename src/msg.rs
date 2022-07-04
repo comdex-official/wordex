@@ -35,7 +35,6 @@ pub struct InstantiateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     CreatePlayer{name: String, addr: Addr},
-    LoadPlayer{addr: Addr},
     StartGame{addr: Addr},
     EndGame{addr: Addr},
     UpdateGame{addr: Addr, game: bool, guess: bool, correct_guess: bool,
@@ -48,6 +47,7 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     //query the player details as it is stored in db
     QueryPlayer{addr : Addr},
+    QueryPlayerExists{addr : Addr},
 }
 
 

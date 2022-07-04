@@ -20,6 +20,7 @@ pub struct State {
     pub minted_tokens: i64,
     pub max_cap: u64,
     pub curr_id:u64,
+    pub players: Option<Vec<Addr>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -43,19 +44,6 @@ pub struct OurCoin {
 }
 
 
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct PlayerInfo {
-    pub players: Option<Vec<(Addr,Player)>>,
-    pub games_ongoing: u64,
-}
-
-impl Default for PlayerInfo{
-    fn default() -> Self {
-        PlayerInfo { players: None, games_ongoing: 0 }
-    }
-}
-
 pub fn config(storage: &mut dyn Storage) -> Singleton<State> {
     singleton(storage, CONFIG_KEY)
 }
@@ -64,11 +52,11 @@ pub fn config_read(storage: &dyn Storage) -> ReadonlySingleton<State> {
     singleton_read(storage, CONFIG_KEY)
 }
 
-pub fn player_bank(storage: &mut dyn Storage) -> Bucket<PlayerInfo> {
+pub fn player_bank(storage: &mut dyn Storage) -> Bucket<Player> {
     bucket(storage, PLAYER_KEY)
 }
 
-pub fn player_bank_read(storage: &dyn Storage) -> ReadonlyBucket<PlayerInfo> {
+pub fn player_bank_read(storage: &dyn Storage) -> ReadonlyBucket<Player> {
     bucket_read(storage, PLAYER_KEY)
 }
 

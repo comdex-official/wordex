@@ -54,7 +54,6 @@ pub fn execute(
 //if game is not ongoing and time is not over, new game can't be started
 //if time is over, new game can surely be started.
 
-#[entry_point]
 pub fn query(deps: DepsMut, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::QueryPlayer {addr} =>

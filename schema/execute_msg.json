@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ExecuteMsg",
+  "anyOf": [
+    {
+      "type": "object",
+      "required": [
+        "create_player"
+      ],
+      "properties": {
+        "create_player": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "start_game"
+      ],
+      "properties": {
+        "start_game": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "end_game"
+      ],
+      "properties": {
+        "end_game": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "update_game"
+      ],
+      "properties": {
+        "update_game": {
+          "type": "object",
+          "required": [
+            "correct_guess",
+            "game",
+            "guess",
+            "wrong_guess"
+          ],
+          "properties": {
+            "correct_guess": {
+              "type": "boolean"
+            },
+            "game": {
+              "type": "boolean"
+            },
+            "guess": {
+              "type": "boolean"
+            },
+            "wrong_guess": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "reward_player"
+      ],
+      "properties": {
+        "reward_player": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

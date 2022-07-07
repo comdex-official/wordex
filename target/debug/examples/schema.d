@@ -1,0 +1,1 @@
+/home/abhilash/cw20-projects/wordex/target/debug/examples/schema: /home/abhilash/cw20-projects/wordex/examples/schema.rs /home/abhilash/cw20-projects/wordex/src/contract.rs /home/abhilash/cw20-projects/wordex/src/error.rs /home/abhilash/cw20-projects/wordex/src/lib.rs /home/abhilash/cw20-projects/wordex/src/msg.rs /home/abhilash/cw20-projects/wordex/src/state.rs

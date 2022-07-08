@@ -1,4 +1,3 @@
-use cosmwasm_std::{Addr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -46,8 +45,8 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     //query the player details as it is stored in db
-    QueryPlayer{addr : Addr},
-    QueryPlayerExists{addr : Addr},
+    QueryPlayer{addr : String},
+    QueryPlayerExists{addr : String},
 }
 
 

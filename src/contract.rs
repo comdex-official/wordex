@@ -1,6 +1,6 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, DepsMut, Env, MessageInfo, Response, StdResult, Binary};
+use cosmwasm_std::{to_binary, DepsMut, Deps, Env, MessageInfo, Response, StdResult, Binary};
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
@@ -54,17 +54,19 @@ pub fn execute(
 //if game is not ongoing and time is not over, new game can't be started
 //if time is over, new game can surely be started.
 
-pub fn query(deps: DepsMut, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::QueryPlayer {addr} =>
-        { to_binary(&player_bank_read(deps.storage).may_load(addr.as_str().as_bytes())?) },
+        {   to_binary(&player_bank_read(deps.storage).may_load(addr.as_bytes())?) },
         QueryMsg::QueryPlayerExists { addr } =>
         {
             //read the state
+            let api = deps.api;
             let state = config_read(deps.storage).load()?;
+            let addr_in_native_form = api.addr_validate(&addr)?;
             let res = match state.players{
                 None => false,
-                Some(x) => x.contains(&addr)
+                Some(x) => x.contains(&addr_in_native_form)
             };
             to_binary(&res)
         }

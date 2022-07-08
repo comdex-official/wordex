@@ -1,1 +1,1 @@
-ebe390f962264681a9b9c235a8e85ed52f4a82f8f1b26ad31d62c0a4176663e6  ./target/wasm32-unknown-unknown/release/wordex.wasm
+2e5bbe9795a92b015b7f7cfbea8301280a71787c987b432cd775d24d26b19708  ./target/wasm32-unknown-unknown/release/wordex.wasm

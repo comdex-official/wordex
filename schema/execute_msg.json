@@ -4,15 +4,11 @@
   "anyOf": [
     {
       "type": "object",
-      "required": [
-        "create_player"
-      ],
+      "required": ["create_player"],
       "properties": {
         "create_player": {
           "type": "object",
-          "required": [
-            "name"
-          ],
+          "required": ["name"],
           "properties": {
             "name": {
               "type": "string"
@@ -24,9 +20,7 @@
     },
     {
       "type": "object",
-      "required": [
-        "start_game"
-      ],
+      "required": ["start_game"],
       "properties": {
         "start_game": {
           "type": "object"
@@ -36,9 +30,7 @@
     },
     {
       "type": "object",
-      "required": [
-        "end_game"
-      ],
+      "required": ["end_game"],
       "properties": {
         "end_game": {
           "type": "object"
@@ -48,30 +40,42 @@
     },
     {
       "type": "object",
-      "required": [
-        "update_game"
-      ],
+      "required": ["update_game"],
       "properties": {
         "update_game": {
           "type": "object",
           "required": [
             "correct_guess",
             "game",
+            "game_won",
             "guess",
             "wrong_guess"
           ],
           "properties": {
             "correct_guess": {
-              "type": "boolean"
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
             },
             "game": {
-              "type": "boolean"
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "game_won": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
             },
             "guess": {
-              "type": "boolean"
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
             },
             "wrong_guess": {
-              "type": "boolean"
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
             }
           }
         }
@@ -80,9 +84,7 @@
     },
     {
       "type": "object",
-      "required": [
-        "reward_player"
-      ],
+      "required": ["reward_player"],
       "properties": {
         "reward_player": {
           "type": "object"

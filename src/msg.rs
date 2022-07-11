@@ -36,8 +36,8 @@ pub enum ExecuteMsg {
     CreatePlayer{name: String},
     StartGame{},
     EndGame{},
-    UpdateGame{game: bool, guess: bool, correct_guess: bool,
-    wrong_guess:bool},
+    UpdateGame{game: u64, guess: u64, game_won: u64, correct_guess: u64,
+    wrong_guess:u64},
     RewardPlayer{},
 }
 

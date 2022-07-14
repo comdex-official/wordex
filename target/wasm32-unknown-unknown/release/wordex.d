@@ -1,0 +1,1 @@
+/home/abhilash/cw20-projects/wordex/target/wasm32-unknown-unknown/release/wordex.wasm: /home/abhilash/cw20-projects/wordex/src/contract.rs /home/abhilash/cw20-projects/wordex/src/error.rs /home/abhilash/cw20-projects/wordex/src/lib.rs /home/abhilash/cw20-projects/wordex/src/msg.rs /home/abhilash/cw20-projects/wordex/src/state.rs

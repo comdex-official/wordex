@@ -1,0 +1,1 @@
+e687ade56e637699b47bca57735bae8ddcd1ed3771c6b6b001c19b2cb0b6e1c6  ./target/wasm32-unknown-unknown/release/wordex.wasm

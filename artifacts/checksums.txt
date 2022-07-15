@@ -1,1 +1,1 @@
-0a549d2819ebe5a421fb08641a071034bcfaf7e00e40e1dbb4dd2620687a41b3  wordex.wasm
+b25c6f4518cfa3a63aee62df0b83ff3eea43a933fa5e00cdc17534ef6c9e85a8  wordex.wasm

@@ -1,6 +1,3 @@
-// use std::time::SystemTime;
-
-// use std::time::Duration;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, DepsMut, Deps, Env, MessageInfo, Response, StdResult, Binary};
@@ -8,7 +5,7 @@ use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{State,config, config_read, Player, player_bank, player_bank_read};
+use crate::state::{State,config, config_read, Player, player_bank, player_bank_read, words_bank, words_bank_read};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:wordex";
@@ -21,6 +18,7 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+
     let state = State {
         creator: info.clone().sender,
         denom: msg.denom,
@@ -47,7 +45,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::CreatePlayer {name} => create_player(deps, info, name),
-        ExecuteMsg::StartGame {} => start_game(deps, _env,info),
+        ExecuteMsg::StartGame {game_words} => start_game(deps, _env,info, game_words),
         ExecuteMsg::UpdateGame { game, guess, game_won , correct_guess, wrong_guess} => update_game(deps, info, game, guess, game_won, correct_guess, wrong_guess),//update guesses, sets and won games
         ExecuteMsg::RewardPlayer{} => reward_player(deps, info),
         ExecuteMsg::EndGame{} => end_game(deps, info),
@@ -72,6 +70,34 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 Some(x) => x.contains(&addr_in_native_form)
             };
             to_binary(&res)
+        },
+        QueryMsg::QueryPlayerWord { addr, pos } => 
+        {
+            //read wordset generated after initiation of game
+            let gamewords = words_bank_read(deps.storage).load(addr.as_bytes())?;
+            let words = gamewords.words.unwrap();
+            to_binary(&words[(pos-1) as usize])
+        },
+        QueryMsg::QueryCorrectGuess { addr, guessed, pos } =>
+        {
+            //read wordset generated after initiation of game
+            let gamewords = words_bank_read(deps.storage).load(addr.as_bytes())?;
+
+            //this stores the corresponding letters matchings
+            let mut matches = Vec::new();
+
+            //the words for the set 
+            let set_words = gamewords.words.unwrap();
+            //the word that needed to be guessed
+            let to_be_guessed = set_words[(pos-1) as usize].clone();
+
+            //now iterate over the strings and check equality
+            for (i, c) in to_be_guessed.chars().enumerate() {
+                let b: u8 = guessed.as_bytes()[i];
+                let c2: char = b as char;
+                matches.push(c == c2);
+            };
+            return to_binary(&matches);
         }
     }
 }
@@ -119,7 +145,7 @@ pub fn create_player(deps: DepsMut, info: MessageInfo, name: String) -> Result<R
 }
 
 
-fn start_game(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError>{
+fn start_game(deps: DepsMut, env: Env, info: MessageInfo, game_words: Vec<String>) -> Result<Response, ContractError>{
     //read playerinfo
     let key = info.sender.as_str().as_bytes();
 
@@ -131,21 +157,27 @@ fn start_game(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Co
     player.game_ongoing = true;
     player.rem_games_set = 5;
     player.guesses_rem = 18;
-    player.games_won_in_set = 0;
+    player.games_won_in_set = 0;    
     
     //starting the game also resets the time to renew
     //set it to current blocktime
     player.time_renewed = Some(env.block.time);    
-
     //save the details
     player_bank(deps.storage).save(key, &player)?;
 
+
+    //read word set using player key
+    let mut gamewords = words_bank_read(deps.storage).load(key)?;
+    //starting the game randomly selects 5 words from word pool and stores
+    gamewords.words = Some(game_words);
+    //save the gamewords
+    words_bank(deps.storage).save(key,&gamewords)?;
+
+
     //read state details
     let mut state = config_read(deps.storage).load()?;
-
     //update number of games played
     state.games_played += 1;
-
     //saving state data
     config(deps.storage).save(&state)?;
 
@@ -193,6 +225,11 @@ pub fn end_game(deps: DepsMut, info: MessageInfo)
 
     //save the details
     player_bank(deps.storage).save(key, &player)?;
+
+    //change the gamewords
+    let mut gamewords = words_bank_read(deps.storage).load(key)?;
+    gamewords.words = None;
+    words_bank(deps.storage).save(key, &gamewords)?;
 
     Ok(Response::default())
 }

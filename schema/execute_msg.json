@@ -4,11 +4,15 @@
   "anyOf": [
     {
       "type": "object",
-      "required": ["create_player"],
+      "required": [
+        "create_player"
+      ],
       "properties": {
         "create_player": {
           "type": "object",
-          "required": ["name"],
+          "required": [
+            "name"
+          ],
           "properties": {
             "name": {
               "type": "string"
@@ -20,17 +24,32 @@
     },
     {
       "type": "object",
-      "required": ["start_game"],
+      "required": [
+        "start_game"
+      ],
       "properties": {
         "start_game": {
-          "type": "object"
+          "type": "object",
+          "required": [
+            "game_words"
+          ],
+          "properties": {
+            "game_words": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
         }
       },
       "additionalProperties": false
     },
     {
       "type": "object",
-      "required": ["end_game"],
+      "required": [
+        "end_game"
+      ],
       "properties": {
         "end_game": {
           "type": "object"
@@ -40,7 +59,9 @@
     },
     {
       "type": "object",
-      "required": ["update_game"],
+      "required": [
+        "update_game"
+      ],
       "properties": {
         "update_game": {
           "type": "object",
@@ -84,7 +105,9 @@
     },
     {
       "type": "object",
-      "required": ["reward_player"],
+      "required": [
+        "reward_player"
+      ],
       "properties": {
         "reward_player": {
           "type": "object"

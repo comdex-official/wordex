@@ -1,0 +1,11 @@
+/home/abhilash/cw20-projects/wordex/target/wasm32-unknown-unknown/release/deps/getrandom-95a1f3f587d78a99.rmeta: /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/lib.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/error.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/util.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/error_impls.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/dummy.rs
+
+/home/abhilash/cw20-projects/wordex/target/wasm32-unknown-unknown/release/deps/libgetrandom-95a1f3f587d78a99.rlib: /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/lib.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/error.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/util.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/error_impls.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/dummy.rs
+
+/home/abhilash/cw20-projects/wordex/target/wasm32-unknown-unknown/release/deps/getrandom-95a1f3f587d78a99.d: /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/lib.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/error.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/util.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/error_impls.rs /home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/dummy.rs
+
+/home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/lib.rs:
+/home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/error.rs:
+/home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/util.rs:
+/home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/error_impls.rs:
+/home/abhilash/.cargo/registry/src/github.com-1ecc6299db9ec823/getrandom-0.1.16/src/dummy.rs:

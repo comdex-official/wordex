@@ -37,9 +37,13 @@ pub struct Player {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct OurCoin {
-    pub denom: String,
-    pub amount: u64,
+pub struct Gamewords {
+    pub words: Option<Vec<String>>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct Allwords{
+    pub allwords : Vec<String>,
 }
 
 
@@ -56,6 +60,15 @@ pub fn player_bank(storage: &mut dyn Storage) -> Bucket<Player> {
 }
 
 pub fn player_bank_read(storage: &dyn Storage) -> ReadonlyBucket<Player> {
+    bucket_read(storage, PLAYER_KEY)
+}
+
+
+pub fn words_bank(storage: &mut dyn Storage) -> Bucket<Gamewords> {
+    bucket(storage, PLAYER_KEY)
+}
+
+pub fn words_bank_read(storage: &dyn Storage) -> ReadonlyBucket<Gamewords> {
     bucket_read(storage, PLAYER_KEY)
 }
 

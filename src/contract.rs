@@ -5,7 +5,7 @@ use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{State,config, config_read, Player, player_bank, player_bank_read, words_bank, words_bank_read};
+use crate::state::{State,config, config_read, Player, player_bank, player_bank_read};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:wordex";
@@ -71,23 +71,24 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             };
             to_binary(&res)
         },
-        QueryMsg::QueryPlayerWord { addr, pos } => 
+        QueryMsg::QueryPlayerWord { addr, pos} => 
         {
             //read wordset generated after initiation of game
-            let gamewords = words_bank_read(deps.storage).load(addr.as_bytes())?;
-            let words = gamewords.words.unwrap();
-            to_binary(&words[(pos-1) as usize])
+            let player = player_bank_read(deps.storage).load(addr.as_bytes())?;
+            let words = player.set_words.unwrap();
+            let word = words[(pos-1) as usize].clone();
+            to_binary(&word)
         },
         QueryMsg::QueryCorrectGuess { addr, guessed, pos } =>
         {
             //read wordset generated after initiation of game
-            let gamewords = words_bank_read(deps.storage).load(addr.as_bytes())?;
+            let player = player_bank_read(deps.storage).load(addr.as_bytes())?;
 
             //this stores the corresponding letters matchings
             let mut matches = Vec::new();
 
             //the words for the set 
-            let set_words = gamewords.words.unwrap();
+            let set_words = player.set_words.unwrap();
             //the word that needed to be guessed
             let to_be_guessed = set_words[(pos-1) as usize].clone();
 
@@ -119,6 +120,7 @@ pub fn create_player(deps: DepsMut, info: MessageInfo, name: String) -> Result<R
         games_won_in_set:0,
         time_renewed: None,
         game_ongoing: false,
+        set_words: None,
     };
 
     //read playerinfo
@@ -162,16 +164,12 @@ fn start_game(deps: DepsMut, env: Env, info: MessageInfo, game_words: Vec<String
     //starting the game also resets the time to renew
     //set it to current blocktime
     player.time_renewed = Some(env.block.time);    
+    
+    //starting the game also provides 5 random words from frontend and stores
+    player.set_words = Some(game_words);
+
     //save the details
     player_bank(deps.storage).save(key, &player)?;
-
-
-    //read word set using player key
-    let mut gamewords = words_bank_read(deps.storage).load(key)?;
-    //starting the game randomly selects 5 words from word pool and stores
-    gamewords.words = Some(game_words);
-    //save the gamewords
-    words_bank(deps.storage).save(key,&gamewords)?;
 
 
     //read state details
@@ -222,14 +220,10 @@ pub fn end_game(deps: DepsMut, info: MessageInfo)
     player.guesses_rem = 0;
     player.games_won_in_set = 0;
     player.time_renewed = None;
+    player.set_words = None;
 
     //save the details
     player_bank(deps.storage).save(key, &player)?;
-
-    //change the gamewords
-    let mut gamewords = words_bank_read(deps.storage).load(key)?;
-    gamewords.words = None;
-    words_bank(deps.storage).save(key, &gamewords)?;
 
     Ok(Response::default())
 }

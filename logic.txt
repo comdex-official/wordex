@@ -1,0 +1,15 @@
+The game logic goes as:
+You are given 5 wordle games with 5 random words each time the timer renews. At the initiation of player, you have 8hours and 5 wordles to solve in that. you have 18 guesses in total for the 5 wordles, which means if you take up 18 guesses anywhere before guessing the 5th wordle, you lose. the timer renews after the 8hours is past. if you are able to guess the 5 wordles, you are rewarded inversely proportionate to the number of guesses you used up for guessing the wordle, a max when you guess 5 wordles in 5 guesses. in case you lose any one among the set, you get nothing.
+This game is a one player game
+
+1. registry as connection of wallet [query the address if present in db]
+2. if registered, load player details [query msg]
+3. start game if its first match or ahead of renewal time or continue existing game; at start front end sends 5 random words from the database and is stored in contract for that game set.
+4. we have number of games yet to play in this set, and remaining number of guesses the player can make at hand
+5. at end of each guess, the number of guess is updated, reduced by 1.
+6. if the guess is correct, the number of games yet to play is reduced by 1.
+7. to keep guess hidden from user, the user-entered word is queried from the contract and if it matches then contract is updated accordingly.
+8. if player loses the wordle, he loses the game as well, and has to wait for another game at the end of the time renewal and can start thereafter.
+9. the player can play irrespective of that he might mathematically never win the set
+10. if at the end of 5 wins, his total guesses are less than 19, he is rewarded.
+11. if while playing, time is up, the play is cancelled.s

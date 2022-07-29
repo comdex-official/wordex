@@ -228,6 +228,7 @@ pub fn end_game(deps: DepsMut, info: MessageInfo)
     Ok(Response::default())
 }
 
+//incase one wins the player is rewarded and the game is ended
 pub fn reward_player(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError>{
      //read playerinfo
     let key = info.sender.as_str().as_bytes();
@@ -273,6 +274,14 @@ pub fn reward_player(deps: DepsMut, info: MessageInfo) -> Result<Response, Contr
 
     //update player balance; increase by reward points
     player.balance += reward;
+
+    //make game not ongoing, rem games = 0 and rem guesses = 0
+    player.game_ongoing = false;
+    player.rem_games_set = 0;
+    player.guesses_rem = 0;
+    player.games_won_in_set = 0;
+    player.time_renewed = None;
+    player.set_words = None;
 
     //save the details
     player_bank(deps.storage).save(key, &player)?;

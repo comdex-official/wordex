@@ -3,13 +3,13 @@ You are given 5 wordle games with 5 random words each time the timer renews. At 
 This game is a one player game
 
 1. registry as connection of wallet [query the address if present in db]
-2. if registered, load player details [query msg]
-3. start game if its first match or ahead of renewal time or continue existing game; at start front end sends 5 random words from the database and is stored in contract for that game set.
+2. if registered, load player details [querymsg]                                                                                                                             
+3. start game if its first match or ahead of renewal time or continue existing game; at start front end sends 5 random 5 letter words from the database and is stored in contract for that game set.
 4. we have number of games yet to play in this set, and remaining number of guesses the player can make at hand
 5. at end of each guess, the number of guess is updated, reduced by 1.
 6. if the guess is correct, the number of games yet to play is reduced by 1.
-7. to keep guess hidden from user, the user-entered word is queried from the contract and if it matches then contract is updated accordingly.
+7. to keep guess hidden from user, the user-entered word is queried from the contract and if it matches then contract is updated accordingly, the word is matched letter by letter
 8. if player loses the wordle, he loses the game as well, and has to wait for another game at the end of the time renewal and can start thereafter.
 9. the player can play irrespective of that he might mathematically never win the set
 10. if at the end of 5 wins, his total guesses are less than 19, he is rewarded.
-11. if while playing, time is up, the play is cancelled.s
+11. if while playing, time is up, the play is cancelled.

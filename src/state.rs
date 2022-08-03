@@ -10,6 +10,7 @@ use cosmwasm_storage::{
 static CONFIG_KEY: &[u8] = b"config";
 static PLAYER_KEY: &[u8] = b"player";
 
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct State {
     pub creator: Addr,
@@ -34,12 +35,12 @@ pub struct Player {
     pub games_won_in_set: u64,
     pub time_renewed: Option<Timestamp>,
     pub game_ongoing: bool,
+    pub set_words: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct OurCoin {
-    pub denom: String,
-    pub amount: u64,
+pub struct Allwords{
+    pub allwords : Vec<String>,
 }
 
 

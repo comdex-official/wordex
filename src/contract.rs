@@ -1,6 +1,3 @@
-// use std::time::SystemTime;
-
-// use std::time::Duration;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, DepsMut, Deps, Env, MessageInfo, Response, StdResult, Binary};
@@ -21,6 +18,7 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+
     let state = State {
         creator: info.clone().sender,
         denom: msg.denom,
@@ -47,7 +45,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::CreatePlayer {name} => create_player(deps, info, name),
-        ExecuteMsg::StartGame {} => start_game(deps, _env,info),
+        ExecuteMsg::StartGame {game_words} => start_game(deps, _env,info, game_words),
         ExecuteMsg::UpdateGame { game, guess, game_won , correct_guess, wrong_guess} => update_game(deps, info, game, guess, game_won, correct_guess, wrong_guess),//update guesses, sets and won games
         ExecuteMsg::RewardPlayer{} => reward_player(deps, info),
         ExecuteMsg::EndGame{} => end_game(deps, info),
@@ -72,6 +70,35 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 Some(x) => x.contains(&addr_in_native_form)
             };
             to_binary(&res)
+        },
+        QueryMsg::QueryPlayerWord { addr, pos} => 
+        {
+            //read wordset generated after initiation of game
+            let player = player_bank_read(deps.storage).load(addr.as_bytes())?;
+            let words = player.set_words.unwrap();
+            let word = words[(pos-1) as usize].clone();
+            to_binary(&word)
+        },
+        QueryMsg::QueryCorrectGuess { addr, guessed, pos } =>
+        {
+            //read wordset generated after initiation of game
+            let player = player_bank_read(deps.storage).load(addr.as_bytes())?;
+
+            //this stores the corresponding letters matchings
+            let mut matches = Vec::new();
+
+            //the words for the set 
+            let set_words = player.set_words.unwrap();
+            //the word that needed to be guessed
+            let to_be_guessed = set_words[(pos-1) as usize].clone();
+
+            //now iterate over the strings and check equality
+            for (i, c) in to_be_guessed.chars().enumerate() {
+                let b: u8 = guessed.as_bytes()[i];
+                let c2: char = b as char;
+                matches.push(c == c2);
+            };
+            return to_binary(&matches);
         }
     }
 }
@@ -93,6 +120,7 @@ pub fn create_player(deps: DepsMut, info: MessageInfo, name: String) -> Result<R
         games_won_in_set:0,
         time_renewed: None,
         game_ongoing: false,
+        set_words: None,
     };
 
     //read playerinfo
@@ -119,7 +147,7 @@ pub fn create_player(deps: DepsMut, info: MessageInfo, name: String) -> Result<R
 }
 
 
-fn start_game(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError>{
+fn start_game(deps: DepsMut, env: Env, info: MessageInfo, game_words: Vec<String>) -> Result<Response, ContractError>{
     //read playerinfo
     let key = info.sender.as_str().as_bytes();
 
@@ -131,21 +159,23 @@ fn start_game(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, Co
     player.game_ongoing = true;
     player.rem_games_set = 5;
     player.guesses_rem = 18;
-    player.games_won_in_set = 0;
+    player.games_won_in_set = 0;    
     
     //starting the game also resets the time to renew
     //set it to current blocktime
     player.time_renewed = Some(env.block.time);    
+    
+    //starting the game also provides 5 random words from frontend and stores
+    player.set_words = Some(game_words);
 
     //save the details
     player_bank(deps.storage).save(key, &player)?;
 
+
     //read state details
     let mut state = config_read(deps.storage).load()?;
-
     //update number of games played
     state.games_played += 1;
-
     //saving state data
     config(deps.storage).save(&state)?;
 
@@ -190,6 +220,7 @@ pub fn end_game(deps: DepsMut, info: MessageInfo)
     player.guesses_rem = 0;
     player.games_won_in_set = 0;
     player.time_renewed = None;
+    player.set_words = None;
 
     //save the details
     player_bank(deps.storage).save(key, &player)?;
@@ -197,6 +228,7 @@ pub fn end_game(deps: DepsMut, info: MessageInfo)
     Ok(Response::default())
 }
 
+//incase one wins the player is rewarded and the game is ended
 pub fn reward_player(deps: DepsMut, info: MessageInfo) -> Result<Response, ContractError>{
      //read playerinfo
     let key = info.sender.as_str().as_bytes();
@@ -242,6 +274,14 @@ pub fn reward_player(deps: DepsMut, info: MessageInfo) -> Result<Response, Contr
 
     //update player balance; increase by reward points
     player.balance += reward;
+
+    //make game not ongoing, rem games = 0 and rem guesses = 0
+    player.game_ongoing = false;
+    player.rem_games_set = 0;
+    player.guesses_rem = 0;
+    player.games_won_in_set = 0;
+    player.time_renewed = None;
+    player.set_words = None;
 
     //save the details
     player_bank(deps.storage).save(key, &player)?;
